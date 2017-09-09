@@ -3,3 +3,9 @@ do_pull_most_active_users_job:
   class: PullMostActiveUsers
   args:
   description: Runs the perform method in PullMostActiveUsers
+
+do_pull_all_users_job:
+  every: 1h
+  class: PullAllUsers
+  args:
+  description: Runs the perform method in PullAllUsers

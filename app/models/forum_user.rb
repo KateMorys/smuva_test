@@ -3,6 +3,8 @@ class ForumUser < ApplicationRecord
 
   validates_uniqueness_of :username, :scraped_date
 
+  mount_uploader :avatar, AvatarUploader
+
   private
 
   def set_scraped_date

@@ -24,3 +24,5 @@
 .env
 config/database.yml
 dump.rdb
+public/uploads
+public/carrierwave

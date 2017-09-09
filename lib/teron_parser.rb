@@ -1,76 +1,140 @@
 require "selenium-webdriver"
+require "open-uri"
 
 class TeronParser
-  def self.login(username, password)
-    # TeronParser.login("tjn81331", "tjn81331@posdz.com")
+  LOGIN_URL = "http://teron.ru/index.php?app=core&module=global&section=login".freeze
+  LIST_OF_USER_BY_MESSAGES_COUNT_URL = "http://teron.ru/index.php?app=members&module=list&app=members&module=list&showall=0&sort_key=members_display_name&sort_order=asc&max_results=20&quickjump=0&sort_key=posts&sort_order=desc".freeze
+  LIST_OF_USER_BY_ALPHABET_URL = "http://teron.ru/index.php?app=members&module=list&app=members&module=list&showall=0&sort_key=posts&sort_order=desc&max_results=20&quickjump=0&sort_key=members_display_name&sort_order=asc".freeze
 
-    # @driver = Selenium::WebDriver.for :phantomjs
-    @driver = Selenium::WebDriver.for :firefox
+  class << self
+    def login(username, password)
+      # TeronParser.login("tjn81331", "tjn81331@posdz.com")
 
-    @driver.navigate.to "http://teron.ru/index.php?app=core&module=global&section=login"
+      # @driver = Selenium::WebDriver.for :phantomjs
+      @driver = Selenium::WebDriver.for :firefox
 
-    username_field = @driver.find_element(id: "username")
-    username_field.send_keys(username)
-    password_field = @driver.find_element(id: "password")
-    password_field.send_keys(password)
+      @driver.navigate.to LOGIN_URL
 
-    @driver.find_element(class: "input_submit").click
-  end
+      username_field = @driver.find_element(id: "username")
+      username_field.send_keys(username)
+      password_field = @driver.find_element(id: "password")
+      password_field.send_keys(password)
 
-  def self.get_unreaded_messages(username, password)
-    # TeronParser.get_unreaded_messages("tjn81331", "tjn81331@posdz.com")
+      @driver.find_element(class: "input_submit").click
+    end
 
-    login(username, password)
+    def get_unreaded_messages(username, password)
+      # TeronParser.get_unreaded_messages("tjn81331", "tjn81331@posdz.com")
 
-    @driver.navigate.to "http://teron.ru/index.php"
+      login(username, password)
 
-    other_info = @driver.find_element(id: "user_other")
-    raw_count = other_info.find_element(id: "new_message")
-    count = raw_count.text.gsub(/[()]/, "")
-  end
+      @driver.navigate.to "http://teron.ru/index.php"
 
-  def self.most_active_users
-    # TeronParser.most_active_users
+      other_info = @driver.find_element(id: "user_other")
+      raw_count = other_info.find_element(id: "new_message")
+      count = raw_count.text.gsub(/[()]/, "")
+    end
 
-    login(GLOBAL[:teron_username], GLOBAL[:teron_password])
+    def most_active_users
+      # TeronParser.most_active_users
 
-    @driver.navigate.to "http://teron.ru/index.php?app=members&module=list&app=members&module=list&showall=0&sort_key=members_display_name&sort_order=asc&max_results=20&quickjump=0&sort_key=posts&sort_order=desc"
+      login(GLOBAL[:teron_username], GLOBAL[:teron_password])
 
-    first_page = true
-    need_next_page = false
+      @driver.navigate.to LIST_OF_USER_BY_MESSAGES_COUNT_URL
 
-    while first_page || need_next_page
-      first_page = false
-
-      next_page_button = @driver.find_element(class: "next")
-      next_page_button.click if need_next_page
-
+      first_page = true
       need_next_page = false
 
-      parse_members
+      while first_page || need_next_page
+        first_page = false
 
-      @list_of_member.each_with_index do |member, i|
-        username = member.text.split[0]
-        messages_count = member.text.gsub(/\s+/, "").split(":")[3].delete("Просмотров").to_i
+        next_page_button = @driver.find_element(class: "next")
+        next_page_button.click if need_next_page
 
-        break if messages_count < GLOBAL[:teron_min_messages_count]
+        need_next_page = false
 
-        need_next_page = true if i == 19 && messages_count > GLOBAL[:teron_min_messages_count]
+        parse_members
 
-        ForumUser.create(username: username, messages_count: messages_count)
+        @list_of_member.each_with_index do |member, i|
+          username = member.text.split[0]
+          messages_count = member.text.gsub(/\s+/, "").split(":")[3].delete("Просмотров").to_i
+
+          break if messages_count < GLOBAL[:teron_min_messages_count]
+
+          need_next_page = true if i == 19 && messages_count > GLOBAL[:teron_min_messages_count]
+
+          ForumUser.create(username: username, messages_count: messages_count)
+        end
       end
     end
-  end
 
-  private
+    def all_users
+      # TeronParser.all_users
 
-  def parse_members
-    members_wrap = @driver.find_element(id: "member_wrap")
-    raw_members = members_wrap.find_element(tag_name: "ul", class: "members")
+      login(GLOBAL[:teron_username], GLOBAL[:teron_password])
 
-    @list_of_member = []
-    raw_members.find_elements(tag_name: "li").each do |raw_member|
-      @list_of_member << raw_member if raw_member.text.present?
+      @driver.navigate.to LIST_OF_USER_BY_ALPHABET_URL
+
+      first_page = true
+      need_next_page = false
+      page_number = 1
+      wanted_pages = 3 # prevent parse over 10000 pages
+
+      while first_page || need_next_page
+        break if page_number <= wanted_pages
+
+        first_page = false
+
+        next_page_button = @driver.find_element(class: "next")
+        next_page_button.click if need_next_page
+
+        need_next_page = false
+
+        parse_members
+
+        list_of_members_ids = []
+        @list_of_member.each_with_index do |member, i|
+          id = member.attribute("id").delete("member_id_")
+          username = member.text.split[0]
+
+          need_next_page = true if i == 19
+
+          list_of_members_ids << [id, username]
+        end
+
+        list_of_members_ids.each do |id, username|
+          profile_url = "http://teron.ru/index.php?showuser=#{id}"
+          @driver.navigate.to profile_url
+
+          form = @driver.find_element(id: "userBg")
+          avatar_scr = form.find_element(class: "photo").attribute("src")
+          file_path = "tmp/images/image_#{id + '.' + avatar_scr.split(".")[-1]}"
+          open(file_path, "wb") do |file|
+            file << open(avatar_scr).read
+          end
+
+          user = ForumUser.find_or_create_by(username: username)
+          user.profile_url = profile_url
+          user.avatar = File.open(file_path)
+          user.save
+
+          @driver.navigate.back
+        end
+
+        page_number += 1
+      end
+    end
+
+    private
+
+    def parse_members
+      members_wrap = @driver.find_element(id: "member_wrap")
+      raw_members = members_wrap.find_element(tag_name: "ul", class: "members")
+
+      @list_of_member = []
+      raw_members.find_elements(tag_name: "li").each do |raw_member|
+        @list_of_member << raw_member if raw_member.text.present?
+      end
     end
   end
 end
