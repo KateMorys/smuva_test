@@ -1,0 +1,15 @@
+teron: &teron
+  teron_username: <%= ENV['TERON_USERNAME'] %>
+  teron_password: <%= ENV['TERON_PASSWORD'] %>
+  teron_min_messages_count: 10000
+
+resque_scheduler: &resque_scheduler
+  resque_repeat_job_every: "30m"
+
+production:
+  <<: *teron
+  <<: *resque_scheduler
+
+development:
+  <<: *teron
+  <<: *resque_scheduler

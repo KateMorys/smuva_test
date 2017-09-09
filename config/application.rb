@@ -18,3 +18,6 @@ module SmuvaTest
     config.autoload_paths << Rails.root.join('lib')
   end
 end
+
+erb_result = ERB.new(File.open("#{::Rails.root.to_s}/config/settings.yml").read).result
+GLOBAL = YAML::load(erb_result)[::Rails.env].with_indifferent_access
