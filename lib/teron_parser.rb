@@ -36,6 +36,8 @@ class TeronParser
       count = raw_count.text.gsub(/[()]/, "")
 
       @driver.quit
+
+      return count
     end
 
     def most_active_users
@@ -50,9 +52,7 @@ class TeronParser
 
       while first_page || need_next_page
         first_page = false
-
         next_page(need_next_page)
-
         need_next_page = false
 
         parse_members
@@ -87,9 +87,7 @@ class TeronParser
         break if page_number > max_pages
 
         first_page = false
-
         next_page(need_next_page)
-
         need_next_page = false
 
         parse_members

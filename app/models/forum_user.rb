@@ -1,9 +1,7 @@
 class ForumUser < ApplicationRecord
-  before_save :set_scraped_date
-
-  validates_uniqueness_of :username, :scraped_date
-
   mount_uploader :avatar, AvatarUploader
+  validates_uniqueness_of :username, :scraped_date
+  before_save :set_scraped_date
 
   private
 
