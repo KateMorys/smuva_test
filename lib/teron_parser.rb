@@ -93,8 +93,8 @@ class TeronParser
         profile_url = "http://teron.ru/index.php?showuser=#{id}"
         @driver.navigate.to profile_url
 
-        form = @driver.find_element(id: "userBg")
-        avatar_scr = form.find_element(class: "photo").attribute("src")
+        user_form = @driver.find_element(id: "userBg")
+        avatar_scr = user_form.find_element(class: "photo").attribute("src")
         file_path = "tmp/images/image_#{id + '.' + avatar_scr.split(".")[-1]}"
         open(file_path, "wb") do |file|
           file << open(avatar_scr).read
@@ -104,8 +104,6 @@ class TeronParser
         user.profile_url = profile_url
         user.avatar = File.open(file_path)
         user.save
-
-        @driver.navigate.back
       end
 
       @driver.quit
@@ -174,8 +172,8 @@ class TeronParser
     private
 
     def login(username = GLOBAL[:teron_username], password = GLOBAL[:teron_password])
-      @driver = Selenium::WebDriver.for :phantomjs
-      # @driver = Selenium::WebDriver.for :firefox
+      # @driver = Selenium::WebDriver.for :phantomjs
+      @driver = Selenium::WebDriver.for :firefox
 
       @driver.navigate.to LOGIN_URL
 
