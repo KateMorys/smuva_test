@@ -8,22 +8,6 @@ class TeronParser
   SEARCH_URL = "http://teron.ru/index.php?app=core&module=search&do=search&fromMainBar=1".freeze
 
   class << self
-    def login(username = GLOBAL[:teron_username], password = GLOBAL[:teron_password])
-      # TeronParser.login("tjn81331", "tjn81331@posdz.com")
-
-      # @driver = Selenium::WebDriver.for :phantomjs
-      @driver = Selenium::WebDriver.for :firefox
-
-      @driver.navigate.to LOGIN_URL
-
-      username_field = @driver.find_element(id: "username")
-      username_field.send_keys(username)
-      password_field = @driver.find_element(id: "password")
-      password_field.send_keys(password)
-
-      @driver.find_element(class: "input_submit").click
-    end
-
     def get_unreaded_messages(username, password)
       # TeronParser.get_unreaded_messages("tjn81331", "tjn81331@posdz.com")
 
@@ -188,6 +172,20 @@ class TeronParser
     end
 
     private
+
+    def login(username = GLOBAL[:teron_username], password = GLOBAL[:teron_password])
+      @driver = Selenium::WebDriver.for :phantomjs
+      # @driver = Selenium::WebDriver.for :firefox
+
+      @driver.navigate.to LOGIN_URL
+
+      username_field = @driver.find_element(id: "username")
+      username_field.send_keys(username)
+      password_field = @driver.find_element(id: "password")
+      password_field.send_keys(password)
+
+      @driver.find_element(class: "input_submit").click
+    end
 
     def parse_members
       members_wrap = @driver.find_element(id: "member_wrap")
