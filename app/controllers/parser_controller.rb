@@ -8,9 +8,18 @@ class ParserController < ApplicationController
     end
   end
 
+  def search_topics
+    if parser_params[:query].present?
+      topics = TeronParser.search_topics(parser_params[:query])
+      render json: { success: true, data: topics }
+    else
+      render json: { error: "Something wrong" }
+    end
+  end
+
   private
 
   def parser_params
-    params.permit(:username, :password)
+    params.permit(:username, :password, :query)
   end
 end
